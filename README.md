@@ -1,0 +1,101 @@
+# tablr
+
+A collection of helper functions for creating publication-ready tables in R Markdown documents. Provides wrappers for `stargazer`, `kable`, and `xtable` with sensible defaults, automatic output format detection (LaTeX/HTML/text), and customizable variable label conversion for regression tables.
+## Installation
+
+```r
+# Install from GitHub
+devtools::install_github("owasow/tablr")
+```
+
+## Features
+
+- **Auto-detect output format**: Functions automatically detect whether you're rendering to PDF (LaTeX), HTML, or text and adjust accordingly
+- **Stargazer wrappers**: `star0()`, `star_ft()`, `star_sm()`, etc. with sensible defaults
+- **Variable label conversion**: `convert_labels()` translates technical variable names to human-readable labels
+- **Customizable mappings**: Register project-specific variable name mappings with `set_label_mappings()`
+- **Kable helpers**: `kable0()`, `kable_striped()`, `kable_scaled()` with consistent styling
+- **ANOVA helpers**: `print_anova()`, `print_models()` for ANOVA table output
+
+## Quick Start
+
+```r
+library(tablr)
+
+# Basic regression table with auto-detected format
+model <- lm(mpg ~ wt + hp + cyl, data = mtcars)
+star0(model)
+
+# Extract and convert variable labels
+labels <- star_var(model)
+star_ft(model, covariate.labels = labels)
+```
+
+## Custom Label Mappings
+
+The key feature is the ability to set project-specific variable label mappings:
+
+```r
+library(tablr)
+
+# Register custom mappings for your project
+set_label_mappings(c(
+    "^immig_stcontext"  = "State Immigration Context",
+    "^isss_5item"       = "ISSS (5-item)",
+    "^likelydeported"   = "Likely Deported",
+    "^avg_emotions"     = "ICE Emotions",
+    "^health_fp"        = "Fair/Poor Health"
+))
+
+# Now convert_labels() and star_var() will use your mappings
+model <- lm(health_fp ~ immig_stcontext + isss_5item, data = mydata)
+labels <- star_var(model)
+# Returns: c("State Immigration Context", "ISSS (5-item)")
+```
+
+### Mapping Syntax
+
+Mappings use regex patterns as names and replacement strings as values:
+
+```r
+set_label_mappings(c(
+    "^age$"           = "Age (years)",           # Exact match
+    "^female"         = "Female",                # Starts with
+    "income.*_10k$"   = "Income (\\$10K)",       # Pattern match
+    ":wave$"          = " x Wave"                # Interaction suffix
+))
+```
+
+### Default Mappings
+
+The package includes defaults for common variables:
+- Demographics: age, female, income, education, married, employed
+- Race/ethnicity: Black, Hispanic, White, Asian, etc.
+- Political: Party ID, ideology, feeling thermometers
+- Region: West, Northeast, South, Midwest
+- Study design: wave, time
+
+Custom mappings take precedence over defaults.
+
+## Format Detection Functions
+
+```r
+get_star_format()   # Returns "latex", "html", or "text"
+get_kable_format()  # Returns "latex", "html", or "markdown"
+get_xtable_format() # Returns "latex" or "html"
+```
+
+## Utility Functions
+
+```r
+add_comma(1234567)         # "1,234,567"
+number_to_word(3)          # "three"
+round1(3.456)              # 3.5
+round2(3.456)              # 3.46
+na_to_dash(c(1, NA, 3))    # c("1", "-", "3")
+na_to_blank(c(1, NA, 3))   # c("1", "", "3")
+```
+
+## License
+
+MIT
