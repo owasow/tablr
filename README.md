@@ -16,6 +16,7 @@ devtools::install_github("owasow/tablr")
 - **Customizable mappings**: Register project-specific variable name mappings with `set_label_mappings()`
 - **Kable helpers**: `kable0()`, `kable_striped()`, `kable_scaled()` with consistent styling
 - **ANOVA helpers**: `print_anova()`, `print_models()` for ANOVA table output
+- **glmer support**: `star_glmer()` creates proper stargazer tables from `lme4::glmer` models with correct delta-method standard errors for odds ratios
 
 ## Quick Start
 
@@ -76,6 +77,35 @@ The package includes defaults for common variables:
 - Study design: wave, time
 
 Custom mappings take precedence over defaults.
+
+## glmer Model Support
+
+Stargazer doesn't properly handle `glmer` models from `lme4`. The `star_glmer()` function solves this by extracting coefficients and standard errors and using stargazer's override parameters:
+
+```r
+library(tablr)
+library(lme4)
+
+# Fit a mixed-effects logistic regression
+model <- glmer(y ~ x1 + x2 + (1|group), data = mydata, family = binomial)
+
+# Log-odds coefficients (default)
+star_glmer(model)
+
+# Odds ratios with delta-method standard errors
+star_glmer(model, exponentiate = TRUE)
+
+# Multiple models with custom labels
+star_glmer(model1, model2, model3,
+           exponentiate = TRUE,
+           star_args = list(
+               covariate.labels = c("Variable 1", "Variable 2"),
+               title = "My Table"
+           ))
+```
+
+The delta method correctly transforms standard errors when exponentiating:
+`SE(OR) = exp(β) × SE(β)`
 
 ## Format Detection Functions
 

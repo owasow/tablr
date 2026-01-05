@@ -3,14 +3,17 @@ Title: Table Formatting Utilities for R Markdown and LaTeX
 Version: 0.1.0
 Authors@R:
     person("Omar", "Wasow", , "owasow@gmail.com", role = c("aut", "cre"))
+Author: Omar Wasow [aut, cre]
+Maintainer: Omar Wasow <owasow@gmail.com>
 Description: A collection of helper functions for creating publication-ready
     tables in R Markdown documents. Provides wrappers for stargazer, kable, and
     xtable with sensible defaults, automatic output format detection (LaTeX/HTML/text),
     and customizable variable label conversion for regression tables.
 License: MIT + file LICENSE
+Depends: R (>= 4.1.0)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.1
+RoxygenNote: 7.3.2
 Imports:
     dplyr,
     stringr,
@@ -20,8 +23,10 @@ Imports:
     xtable,
     broom,
     scales,
-    glue
+    glue,
+    lme4
 Suggests:
     testthat (>= 3.0.0),
-    rmarkdown
+    rmarkdown,
+    rstudioapi
 Config/testthat/edition: 3

@@ -5,6 +5,9 @@
 #' @name anova-helpers
 NULL
 
+# Global variable declarations for R CMD check
+utils::globalVariables(c("Pr(>Chi)"))
+
 #' Convert Model Terms for ANOVA Display
 #'
 #' Converts technical model term names to human-readable labels,
