@@ -17,6 +17,7 @@ devtools::install_github("owasow/tablr")
 - **Kable helpers**: `kable0()`, `kable_striped()`, `kable_scaled()` with consistent styling
 - **ANOVA helpers**: `print_anova()`, `print_models()` for ANOVA table output
 - **glmer support**: `star_glmer()` creates proper stargazer tables from `lme4::glmer` models with correct delta-method standard errors for odds ratios
+- **Title case conversion**: `to_title_case()` and `bib_to_titlecase()` for converting text and BibTeX files to title case following NYT Manual of Style
 
 ## Quick Start
 
@@ -106,6 +107,41 @@ star_glmer(model1, model2, model3,
 
 The delta method correctly transforms standard errors when exponentiating:
 `SE(OR) = exp(β) × SE(β)`
+
+## Title Case Conversion
+
+Convert text to title case following the New York Times Manual of Style:
+
+```r
+library(tablr)
+
+to_title_case("the quick brown fox")
+# [1] "The Quick Brown Fox"
+
+to_title_case("a tale of two cities: the best of times")
+# [1] "A Tale of Two Cities: The Best of Times"
+
+# Preserves mixed-case words like iPhone, URLs, and emails
+to_title_case("testing iPhone and http://example.com")
+# [1] "Testing iPhone and http://example.com"
+```
+
+### BibTeX File Processing
+
+Process BibTeX files to standardize title case in Title, Journal, Publisher, and Booktitle fields:
+
+```r
+# Creates a timestamped output file
+bib_to_titlecase("references.bib")
+
+# Or specify output file
+bib_to_titlecase("references.bib", "references_clean.bib")
+```
+
+The function also cleans up:
+- Location names: "New York, NY" becomes "New York"
+- Abbreviations: "Univ." becomes "University", "Pr" becomes "Press"
+- LaTeX formatting issues
 
 ## Format Detection Functions
 
