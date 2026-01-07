@@ -17,6 +17,7 @@ devtools::install_github("owasow/tablr")
 - **Kable helpers**: `kable0()`, `kable_striped()`, `kable_scaled()` with consistent styling
 - **ANOVA helpers**: `print_anova()`, `print_models()` for ANOVA table output
 - **glmer support**: `star_glmer()` creates proper stargazer tables from `lme4::glmer` models with correct delta-method standard errors for odds ratios
+- **Inline reporting**: `b()`, `p()`, `se()`, `or()`, `bp()`, `orp()`, `z()`, `ci95()` for inline R Markdown results
 - **Title case conversion**: `to_title_case()` and `bib_to_titlecase()` for converting text and BibTeX files to title case following NYT Manual of Style
 
 ## Quick Start
@@ -150,6 +151,32 @@ get_star_format()   # Returns "latex", "html", or "text"
 get_kable_format()  # Returns "latex", "html", or "markdown"
 get_xtable_format() # Returns "latex" or "html"
 ```
+
+## Inline Reporting Helpers
+
+Functions to streamline inline R code when reporting regression results in R Markdown:
+
+```r
+m <- glm(am ~ wt + hp, data = mtcars, family = binomial)
+
+b(m, "wt")           # Coefficient: -8.08
+se(m, "wt")          # Standard error: 3.07
+p(m, "wt")           # P-value: "= 0.014" or "< .001"
+or(m, "wt")          # Odds ratio: 0
+z(m, "wt")           # Z-statistic: -2.63
+ci95(m, "wt")        # 95% CI: "[-16.42, -3.03]"
+ci95(m, "wt", exp = TRUE)  # OR 95% CI: "[0, 0.05]"
+
+# Combined formats
+bp(m, "wt")          # "b = -8.08, p = 0.014"
+orp(m, "wt")         # "OR = 0, p = 0.014"
+```
+
+Use in R Markdown prose:
+```
+Weight significantly predicted transmission (`r bp(m, 'wt')`).
+```
+Renders as: "Weight significantly predicted transmission (b = -8.08, p = 0.014)."
 
 ## Utility Functions
 
