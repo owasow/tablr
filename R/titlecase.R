@@ -247,6 +247,118 @@ to_title_case <- function(text,
 }
 
 
+#' Protect Abbreviations from CSL Case Conversion
+#'
+#' Wraps abbreviations and acronyms in braces to protect them from being
+#' lowercased by CSL (Citation Style Language) text-case transformations.
+#' This is necessary because CSL processors ignore BibTeX brace protection
+#' and apply their own case rules.
+#'
+#' @param text Character string (typically a BibTeX title field)
+#' @param protect_dotted Logical. If TRUE (default), protect dotted
+#'   abbreviations like U.S., U.K., E.U.
+#' @param protect_single_letter Logical. If TRUE (default), protect single
+#'   uppercase letters that are likely programming languages or abbreviations
+#'   (R, C, S, Q, J) but not common words (A, I).
+#' @param protect_acronyms Character vector of specific acronyms to wrap in
+#'   braces. Default includes common terms that CSL might lowercase.
+#'
+#' @return Character string with protected terms wrapped in braces
+#' @export
+#'
+#' @details
+#' CSL (Citation Style Language) processors like Pandoc's citeproc apply
+#' their own case conversion rules that ignore BibTeX's brace protection.
+#' When a CSL style specifies \code{text-case="title"} or
+#' \code{text-case="sentence"}, terms like "U.S." become "u.s." and "R"
+#' becomes "r".
+#'
+#' This function adds BibTeX braces around terms that need protection:
+#' \itemize{
+#'   \item Dotted abbreviations: U.S. -> \{U.S.\}, U.K. -> \{U.K.\}
+#'   \item Single-letter languages/tools: R -> \{R\}, C -> \{C\}
+#'   \item Explicit acronyms: AIDS -> \{AIDS\}, COVID -> \{COVID\}
+#' }
+#'
+#' The braces tell BibTeX (and some CSL processors) to preserve the exact
+#' capitalization.
+#'
+#' @examples
+#' protect_caps_for_csl("The Effect of U.S. Policy on R Users")
+#' # Returns: "The Effect of {U.S.} Policy on {R} Users"
+#'
+#' protect_caps_for_csl("COVID-19 and AIDS Research")
+#' # Returns: "{COVID}-19 and {AIDS} Research"
+#'
+protect_caps_for_csl <- function(text,
+                                 protect_dotted = TRUE,
+                                 protect_single_letter = TRUE,
+                                 protect_acronyms = c(
+                                   # Diseases/medical
+                                   "AIDS", "HIV", "COVID", "SARS", "MERS",
+                                   # Biology
+                                   "DNA", "RNA", "PCR", "CRISPR",
+                                   # Organizations
+                                   "NATO", "UNESCO", "UNICEF", "WHO",
+                                   # Technology
+                                   "API", "SQL", "HTML", "CSS", "JSON", "XML",
+                                   # Statistics/methods
+                                   "OLS", "IV", "RCT", "DID", "RDD", "LATE",
+                                   "GMM", "MLE", "MCMC", "HLM", "SEM",
+                                   # Social science surveys
+                                   "ANES", "GSS", "CPS", "ACS", "CCES", "CMPS",
+                                   # Common acronyms
+                                   "US", "UK", "EU", "UN", "GDP", "GNP",
+                                   "LGBTQ", "LGBT", "CEO", "CFO", "NGO",
+                                   "IRB", "NSF", "NIH", "DOJ", "DOD"
+                                 )) {
+
+  if (is.na(text) || text == "") return(text)
+
+  # 1. Protect dotted abbreviations like U.S., U.K., E.U., N.Y.
+  # Pattern: 2+ capital letters each followed by period
+  if (protect_dotted) {
+    # Match: capital letter + period, repeated 2+ times, optionally ending
+    # with capital. Examples: U.S., U.K., E.U., N.Y., U.S.A.
+    # Negative lookbehind/ahead to avoid already-braced content
+    text <- gsub(
+      "(?<!\\{)(([A-Z]\\.){2,}[A-Z]?)(?!\\})",
+      "{\\1}",
+      text,
+      perl = TRUE
+    )
+  }
+
+  # 2. Protect single uppercase letters that are programming languages/tools
+  # R, C, S, Q (for Q methodology), J (for J language)
+  # But NOT: A, I (common English words)
+  if (protect_single_letter) {
+    single_letters <- c("R", "C", "S", "Q", "J")
+
+    for (letter in single_letters) {
+      # Match the letter at word boundary, not already in braces
+      pattern <- paste0("(?<!\\{)\\b", letter, "\\b(?![}])")
+      replacement <- paste0("{", letter, "}")
+      text <- gsub(pattern, replacement, text, perl = TRUE)
+    }
+  }
+
+  # 3. Protect explicit acronyms from the list
+  for (acronym in protect_acronyms) {
+    # Case-sensitive match at word boundaries, not already in braces
+    pattern <- paste0("(?<!\\{)\\b", acronym, "\\b(?!\\})")
+    replacement <- paste0("{", acronym, "}")
+    text <- gsub(pattern, replacement, text, perl = TRUE)
+  }
+
+  # 4. Clean up any double-bracing that might have occurred
+  text <- gsub("\\{\\{", "{", text)
+  text <- gsub("\\}\\}", "}", text)
+
+  text
+}
+
+
 #' Process BibTeX File with Title Case Conversion
 #'
 #' Reads a BibTeX file and converts Title, Journal, Publisher, and Booktitle
@@ -260,6 +372,10 @@ to_title_case <- function(text,
 #' @param clean_abbreviations Logical. If TRUE (default), expands common
 #'   publisher abbreviations (e.g., "Pr" becomes "Press") and wraps software
 #'   package names in braces.
+#' @param protect_for_csl Logical. If TRUE (default), wrap abbreviations and
+#'   acronyms in braces to protect them from CSL case conversion. This is
+#'   important when using Pandoc/citeproc which applies its own title-case
+#'   rules that ignore BibTeX brace conventions. Only applied to Title fields.
 #' @param fields_to_process Character vector of BibTeX field names to process.
 #'   Defaults to c("Title", "Journal", "Publisher", "Booktitle").
 #' @param preserve_acronyms Character vector of acronyms to preserve in
@@ -268,17 +384,27 @@ to_title_case <- function(text,
 #' @param software_packages Character vector of software/package names to
 #'   keep in lowercase and wrap in braces for BibTeX protection. Default
 #'   includes common R packages (stm, mice, ggplot2, tidyverse, etc.).
+#' @param csl_protect_acronyms Character vector of additional acronyms to
+#'   protect for CSL. These are added to the built-in list in
+#'   \code{\link{protect_caps_for_csl}}. Set to NULL (default) to use only
+#'   the built-in list.
 #'
 #' @return Invisibly returns the path to the output file
 #' @export
 #'
 #' @examples
 #' \dontrun{
-#' # Process a BibTeX file
+#' # Process a BibTeX file with CSL protection (default)
 #' bib_to_titlecase("references.bib")
 #'
 #' # Specify output file
 #' bib_to_titlecase("references.bib", "references_cleaned.bib")
+#'
+#' # Add custom acronyms to protect for CSL
+#' bib_to_titlecase("references.bib", csl_protect_acronyms = c("WEIRD", "fMRI"))
+#'
+#' # Disable CSL protection
+#' bib_to_titlecase("references.bib", protect_for_csl = FALSE)
 #'
 #' # Process only Title fields
 #' bib_to_titlecase("references.bib", fields_to_process = "Title")
@@ -288,6 +414,7 @@ bib_to_titlecase <- function(input_file,
                              output_file = NULL,
                              clean_locations = TRUE,
                              clean_abbreviations = TRUE,
+                             protect_for_csl = TRUE,
                              fields_to_process = c("Title", "Journal",
                                                    "Publisher", "Booktitle"),
                              preserve_acronyms = c("US", "UK", "USA", "UN", "EU",
@@ -305,7 +432,8 @@ bib_to_titlecase <- function(input_file,
                                                    "lubridate", "forcats", "readr",
                                                    "brms", "rstan", "lme4", "lavaan",
                                                    "fixest", "modelsummary", "knitr",
-                                                   "rmarkdown", "shiny", "devtools")) {
+                                                   "rmarkdown", "shiny", "devtools"),
+                             csl_protect_acronyms = NULL) {
 
     if (!file.exists(input_file)) {
         stop("Input file does not exist: ", input_file)
@@ -362,6 +490,24 @@ bib_to_titlecase <- function(input_file,
 
         # Remove trailing period before closing brace if present
         new_content <- gsub("\\.$", "", new_content)
+
+        # Protect for CSL (only for Title fields)
+        if (protect_for_csl && grepl("^\\s*title\\s*=", line, ignore.case = TRUE)) {
+            # Combine default and user-specified acronyms
+            all_acronyms <- c(
+                # Default protection list
+                "AIDS", "HIV", "COVID", "SARS", "DNA", "RNA", "PCR",
+                "US", "UK", "EU", "UN", "GDP", "GNP",
+                "LGBTQ", "LGBT", "CEO", "NGO", "IRB",
+                "OLS", "IV", "RCT", "DID", "RDD", "MLE", "MCMC",
+                "API", "SQL", "HTML"
+            )
+            if (!is.null(csl_protect_acronyms)) {
+                all_acronyms <- unique(c(all_acronyms, csl_protect_acronyms))
+            }
+            new_content <- protect_caps_for_csl(new_content,
+                                                protect_acronyms = all_acronyms)
+        }
 
         # Reconstruct the line
         lines[i] <- paste0(prefix, new_content, suffix)
