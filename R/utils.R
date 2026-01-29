@@ -86,3 +86,84 @@ na_to_blank <- function(x) {
     x <- as.character(x)
     ifelse(is.na(x) | x == "NA", "", x)
 }
+
+#' Not In Operator
+#'
+#' Negation of the \%in\% operator. Returns TRUE for elements not in the set.
+#'
+#' @param x Vector of values to check
+#' @param table Vector of values to check against
+#' @return Logical vector
+#' @export
+#' @examples
+#' c(1, 2, 3) %nin% c(2, 4)
+#' # Returns: TRUE FALSE TRUE
+`%nin%` <- function(x, table) {
+    !x %in% table
+}
+
+#' Format P-value for LaTeX (Categorical)
+#'
+#' Formats p-values into categorical bins for LaTeX output.
+#' Unlike \code{p()} which returns exact values, this returns
+#' category labels like "$p < 0.001$".
+#'
+#' @param x Numeric p-value(s)
+#' @return Character string with LaTeX-formatted p-value category
+#' @export
+#' @examples
+#' pval(0.0001)
+#' # Returns: "$p < 0.001$"
+#' pval(0.03)
+#' # Returns: "$p < 0.05$"
+pval <- function(x) {
+    dplyr::case_when(
+        x < 0.001 ~ "$p < 0.001$",
+        x < 0.01  ~ "$p < 0.01$",
+        x < 0.05  ~ "$p < 0.05$",
+        TRUE      ~ "$p > 0.05$"
+    )
+}
+
+#' Format Exponentiated Coefficient as Percent Change
+#'
+#' For logistic/Poisson regression, converts a coefficient to percent
+#' change in odds/rate: (exp(b) - 1) * 100.
+#'
+#' @param model A fitted model object
+#' @param coef Coefficient index (default: 2, first predictor after intercept)
+#'   or character name of coefficient
+#' @param digits Number of decimal places (default: 1)
+#' @return Formatted percent change string
+#' @export
+#' @examples
+#' m <- glm(am ~ wt, data = mtcars, family = binomial)
+#' format_exp(m, "wt")
+#' # Interpretation: A 1-unit increase in wt changes odds by X%
+format_exp <- function(model, coef = 2, digits = 1) {
+    b <- stats::coef(model)[coef]
+    formatC((exp(b) - 1) * 100, format = "f", digits = digits)
+}
+
+#' Calculate Pseudo R-squared for Model List
+#'
+#' Extracts McFadden's pseudo R-squared from a list of GLM models
+#' using \code{pscl::pR2()}.
+#'
+#' @param model_list A list of fitted GLM models
+#' @return Character vector of formatted pseudo R-squared values
+#' @export
+#' @examples
+#' \dontrun{
+#' m1 <- glm(am ~ wt, data = mtcars, family = binomial)
+#' m2 <- glm(am ~ wt + hp, data = mtcars, family = binomial)
+#' pseudo(list(m1, m2))
+#' }
+pseudo <- function(model_list) {
+    if (!requireNamespace("pscl", quietly = TRUE)) {
+        stop("Package 'pscl' is required for pseudo(). Install with install.packages('pscl')")
+    }
+    purrr::map_dbl(model_list, function(x) as.numeric(pscl::pR2(x)[[6]])) %>%
+        round(digits = 2) %>%
+        format(nsmall = 2)
+}

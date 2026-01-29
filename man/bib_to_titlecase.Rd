@@ -9,6 +9,7 @@ bib_to_titlecase(
   output_file = NULL,
   clean_locations = TRUE,
   clean_abbreviations = TRUE,
+  protect_for_csl = TRUE,
   fields_to_process = c("Title", "Journal", "Publisher", "Booktitle"),
   preserve_acronyms = c("US", "UK", "USA", "UN", "EU", "LGBTQ", "LGBTQ+", "LGBT", "HIV",
     "AIDS", "BET", "AM", "PM", "SSRN", "ICPSR", "CMPS", "NORC", "PS", "NYU", "UCLA",
@@ -17,7 +18,8 @@ bib_to_titlecase(
   software_packages = c("stm", "mice", "ggplot2", "ggridges", "tidyverse", "dplyr",
     "tidyr", "purrr", "stringr", "lubridate", "forcats", "readr", "brms", "rstan",
     "lme4", "lavaan", "fixest", "modelsummary", "knitr", "rmarkdown", "shiny",
-    "devtools")
+    "devtools"),
+  csl_protect_acronyms = NULL
 )
 }
 \arguments{
@@ -33,6 +35,11 @@ names (e.g., "New York, NY" becomes "New York").}
 publisher abbreviations (e.g., "Pr" becomes "Press") and wraps software
 package names in braces.}
 
+\item{protect_for_csl}{Logical. If TRUE (default), wrap abbreviations and
+acronyms in braces to protect them from CSL case conversion. This is
+important when using Pandoc/citeproc which applies its own title-case
+rules that ignore BibTeX brace conventions. Only applied to Title fields.}
+
 \item{fields_to_process}{Character vector of BibTeX field names to process.
 Defaults to c("Title", "Journal", "Publisher", "Booktitle").}
 
@@ -43,6 +50,11 @@ includes common academic acronyms (US, UK, LGBTQ, AIDS, SSRN, etc.).}
 \item{software_packages}{Character vector of software/package names to
 keep in lowercase and wrap in braces for BibTeX protection. Default
 includes common R packages (stm, mice, ggplot2, tidyverse, etc.).}
+
+\item{csl_protect_acronyms}{Character vector of additional acronyms to
+protect for CSL. These are added to the built-in list in
+\code{\link{protect_caps_for_csl}}. Set to NULL (default) to use only
+the built-in list.}
 }
 \value{
 Invisibly returns the path to the output file
@@ -53,11 +65,17 @@ fields to title case following NYT Manual of Style conventions.
 }
 \examples{
 \dontrun{
-# Process a BibTeX file
+# Process a BibTeX file with CSL protection (default)
 bib_to_titlecase("references.bib")
 
 # Specify output file
 bib_to_titlecase("references.bib", "references_cleaned.bib")
+
+# Add custom acronyms to protect for CSL
+bib_to_titlecase("references.bib", csl_protect_acronyms = c("WEIRD", "fMRI"))
+
+# Disable CSL protection
+bib_to_titlecase("references.bib", protect_for_csl = FALSE)
 
 # Process only Title fields
 bib_to_titlecase("references.bib", fields_to_process = "Title")

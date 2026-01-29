@@ -1,6 +1,6 @@
 Package: scholr
 Title: Scholarly Writing Utilities for R Markdown and LaTeX
-Version: 0.2.1
+Version: 0.3.0
 Authors@R:
     person("Omar", "Wasow", , "owasow@gmail.com", role = c("aut", "cre"))
 Author: Omar Wasow [aut, cre]
@@ -24,9 +24,11 @@ Imports:
     broom,
     scales,
     glue,
-    lme4
+    lme4,
+    purrr
 Suggests:
     testthat (>= 3.0.0),
     rmarkdown,
-    rstudioapi
+    rstudioapi,
+    pscl
 Config/testthat/edition: 3

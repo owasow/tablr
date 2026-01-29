@@ -187,7 +187,39 @@ round1(3.456)              # 3.5
 round2(3.456)              # 3.46
 na_to_dash(c(1, NA, 3))    # c("1", "-", "3")
 na_to_blank(c(1, NA, 3))   # c("1", "", "3")
+c(1, 2, 3) %nin% c(2, 4)   # TRUE FALSE TRUE ("not in" operator)
 ```
+
+## P-value and Effect Size Formatting
+
+```r
+# Categorical p-value for LaTeX
+pval(0.001)                # "$p < 0.001$"
+pval(0.03)                 # "$p < 0.05$"
+
+# Percent change from exponentiated coefficient (logistic regression)
+m <- glm(am ~ wt, data = mtcars, family = binomial)
+format_exp(m, "wt")        # "-99.97" (i.e., 99.97% decrease in odds)
+
+# Pseudo R-squared for GLM model lists
+pseudo(list(m1, m2))       # c("0.48", "0.52")
+```
+
+## Odds Ratio Tables
+
+For GLM models with odds ratios and delta-method standard errors:
+
+```r
+m <- glm(am ~ wt + hp, data = mtcars, family = binomial)
+
+# Log-odds (default)
+stargazer2(m)
+
+# Odds ratios with correct SEs
+stargazer2(m, odds.ratio = TRUE)
+```
+
+For mixed-effects models (glmer), use `star_glmer()` instead.
 
 ## License
 

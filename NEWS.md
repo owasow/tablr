@@ -1,3 +1,20 @@
+# scholr 0.3.0
+
+## New Features
+
+* Added `%nin%` operator - negation of `%in%` for checking if elements are NOT in a set
+
+* Added `pval()` for categorical p-value formatting in LaTeX (e.g., "$p < 0.001$")
+
+* Added `format_exp()` to format exponentiated coefficients as percent change,
+  useful for interpreting logistic regression results
+
+* Added `pseudo()` to calculate McFadden's pseudo R-squared for GLM model lists
+  (requires pscl package)
+
+* Added `stargazer2()` - stargazer wrapper that supports odds ratios with
+  delta-method standard errors for GLM models
+
 # scholr 0.2.0
 
 ## New Features

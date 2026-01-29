@@ -205,3 +205,35 @@ star_var <- function(..., omit = NULL) {
 
     return(cov_labels)
 }
+
+#' Stargazer with Odds Ratios (GLM)
+#'
+#' Wrapper for stargazer that displays odds ratios with delta-method
+#' standard errors for GLM models. For mixed models (glmer), use
+#' \code{star_glmer()} instead.
+#'
+#' @param model_list A model or list of models
+#' @param odds.ratio Logical; if TRUE, exponentiate coefficients (default: FALSE)
+#' @param ... Additional arguments passed to stargazer
+#'
+#' @return Stargazer output
+#' @export
+#' @examples
+#' \dontrun{
+#' m <- glm(am ~ wt + hp, data = mtcars, family = binomial)
+#' stargazer2(m, odds.ratio = TRUE)
+#' }
+stargazer2 <- function(model_list, odds.ratio = FALSE, ...) {
+    if (!inherits(model_list, "list")) model_list <- list(model_list)
+
+    if (odds.ratio) {
+        coef_OR <- lapply(model_list, function(x) exp(stats::coef(x)))
+        se_OR <- lapply(model_list, function(x) {
+            exp(stats::coef(x)) * summary(x)$coef[, 2]
+        })
+        p_vals <- lapply(model_list, function(x) summary(x)$coefficients[, 4])
+        stargazer::stargazer(model_list, coef = coef_OR, se = se_OR, p = p_vals, ...)
+    } else {
+        stargazer::stargazer(model_list, ...)
+    }
+}
