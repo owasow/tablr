@@ -24,9 +24,14 @@ star_cut_three <- c(0.05, 0.01, 0.001)
 #' Basic Stargazer Wrapper
 #'
 #' Stargazer with sensible defaults: auto-detected format, no header,
-#' scriptsize font, single significance star at p < 0.05.
+#' scriptsize font, single significance star at p < 0.05. Supports odds
+#' ratios for GLM models when \code{model} is provided as a named argument.
 #'
 #' @param ... Arguments passed to stargazer
+#' @param model A model or list of models. Use this named argument (instead of
+#'   passing models via \code{...}) when you need \code{odds.ratio = TRUE}.
+#' @param odds.ratio Logical; if TRUE and \code{model} is provided, exponentiate
+#'   coefficients to display odds ratios with delta-method standard errors.
 #' @param type Output format. If NULL (default), auto-detected.
 #' @param digits Number of digits to display
 #' @param star.cutoffs Significance cutoffs
@@ -34,14 +39,20 @@ star_cut_three <- c(0.05, 0.01, 0.001)
 #' @export
 #' @examples
 #' \dontrun{
+#' # Basic usage
 #' model <- lm(mpg ~ wt + hp, data = mtcars)
 #' star0(model)
+#'
+#' # With odds ratios for logistic regression
+#' m <- glm(am ~ wt + hp, data = mtcars, family = binomial)
+#' star0(model = m, odds.ratio = TRUE)
 #' }
-star0 <- function(..., type = NULL, digits = 3, star.cutoffs = star_cut_vector) {
+star0 <- function(..., model = NULL, odds.ratio = FALSE, type = NULL,
+                  digits = 3, star.cutoffs = star_cut_vector) {
     if (is.null(type)) type <- get_star_format()
 
-    stargazer::stargazer(
-        ...,
+    # Common stargazer options
+    star_opts <- list(
         digits = digits,
         header = FALSE,
         type = type,
@@ -51,6 +62,37 @@ star0 <- function(..., type = NULL, digits = 3, star.cutoffs = star_cut_vector) 
         notes.append = FALSE,
         notes = "*$p<0.05$"
     )
+
+    # Handle model passed as named argument (for odds.ratio support)
+    if (!is.null(model)) {
+        model_list <- if (inherits(model, "list")) model else list(model)
+
+        if (odds.ratio) {
+            coef_OR <- lapply(model_list, function(x) exp(stats::coef(x)))
+            se_OR <- lapply(model_list, function(x) {
+                exp(stats::coef(x)) * summary(x)$coef[, 2]
+            })
+            p_vals <- lapply(model_list, function(x) summary(x)$coefficients[, 4])
+
+            do.call(stargazer::stargazer, c(
+                list(model_list, coef = coef_OR, se = se_OR, p = p_vals),
+                list(...),
+                star_opts
+            ))
+        } else {
+            do.call(stargazer::stargazer, c(
+                list(model_list),
+                list(...),
+                star_opts
+            ))
+        }
+    } else {
+        # Original behavior - models passed via ...
+        do.call(stargazer::stargazer, c(
+            list(...),
+            star_opts
+        ))
+    }
 }
 
 #' Stargazer Wrapper (Simplified)
