@@ -218,3 +218,84 @@ ci95 <- function(model, var, digits = 2, exp = FALSE) {
     if (exp) ci <- base::exp(ci)
     paste0("[", round(ci[1], digits), ", ", round(ci[2], digits), "]")
 }
+
+#' Format P-value for LaTeX (Inline)
+#'
+#' Formats a p-value for LaTeX inline reporting. Accepts either a raw numeric
+#' p-value or a model object with variable name. Returns a LaTeX math-mode
+#' string with categorical thresholds.
+#'
+#' This is the LaTeX counterpart to \code{\link{p}()}, which returns plain text.
+#' Designed for use in \code{\\Sexpr\{\}} in .Rnw files.
+#'
+#' @param x A numeric p-value, tibble/data.frame cell, OR a fitted model object
+#' @param var Character string naming the coefficient (required if x is a model)
+#' @param digits Number of decimal places (default: 3). Only used for exact
+#'   p-values above 0.05.
+#'
+#' @return LaTeX-formatted p-value string (e.g., "$p$ < 0.01" or "$p$ = 0.072")
+#' @export
+#'
+#' @examples
+#' # With raw numeric
+#' pv(0.03)
+#' # Returns: "$p$ < 0.05"
+#'
+#' pv(0.002)
+#' # Returns: "$p$ < 0.01"
+#'
+#' # With model object
+#' m <- lm(mpg ~ wt, data = mtcars)
+#' pv(m, "wt")
+#'
+#' # In .Rnw file: \Sexpr{pv(0.03)} or \Sexpr{pv(model, "treat")}
+pv <- function(x, var = NULL, digits = 3) {
+    # Extract p-value from model if not numeric
+    if (!is.numeric(x) && !is.data.frame(x) && !is.matrix(x)) {
+        s <- summary(x)
+        if (is.null(var)) stop("var required when x is a model")
+        coef_table <- s$coefficients
+        p_col <- grep("Pr\\(|p-value|p.value|Pr\\(>", colnames(coef_table), value = TRUE)
+        if (length(p_col) > 0) {
+            x <- coef_table[var, p_col[1]]
+        } else if (ncol(coef_table) >= 4) {
+            x <- coef_table[var, 4]
+        } else {
+            stop("Cannot find p-value column in model summary")
+        }
+    }
+
+    # Handle tibble/matrix input
+    if (is.data.frame(x) || is.matrix(x)) x <- x[[1]]
+    x <- as.numeric(x)
+
+    dplyr::case_when(
+        x < 0.001 ~ "$p$ < 0.001",
+        x < 0.01  ~ "$p$ < 0.01",
+        x < 0.05  ~ "$p$ < 0.05",
+        x < 0.10  ~ paste0("$p$ = ", sprintf(paste0("%.", digits, "f"), x)),
+        TRUE      ~ paste0("$p$ = ", sprintf(paste0("%.", digits, "f"), x))
+    )
+}
+
+#' Format Coefficient and P-value for LaTeX (Inline)
+#'
+#' Extracts both coefficient and p-value from a model and formats them
+#' as a single LaTeX string. This is the LaTeX counterpart to \code{\link{bp}()}.
+#'
+#' @param model A fitted model object
+#' @param var Character string naming the coefficient
+#' @param b_digits Digits for coefficient (default: 2)
+#' @param p_digits Digits for p-value (default: 3)
+#'
+#' @return LaTeX-formatted string (e.g., "$b$ = 0.42, $p$ < 0.01")
+#' @export
+#'
+#' @examples
+#' m <- lm(mpg ~ wt, data = mtcars)
+#' bpv(m, "wt")
+#'
+#' # In .Rnw file: \Sexpr{bpv(model, "treat")}
+bpv <- function(model, var, b_digits = 2, p_digits = 3) {
+    paste0("$b$ = ", b(model, var, b_digits), ", ", pv(model, var, p_digits))
+}

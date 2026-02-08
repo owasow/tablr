@@ -117,6 +117,8 @@ na_to_blank <- function(x) {
 #' pval(0.03)
 #' # Returns: "$p < 0.05$"
 pval <- function(x) {
+    if (is.data.frame(x) || is.matrix(x)) x <- x[[1]]
+    x <- as.numeric(x)
     dplyr::case_when(
         x < 0.001 ~ "$p < 0.001$",
         x < 0.01  ~ "$p < 0.01$",

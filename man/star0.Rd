@@ -4,10 +4,23 @@
 \alias{star0}
 \title{Basic Stargazer Wrapper}
 \usage{
-star0(..., type = NULL, digits = 3, star.cutoffs = star_cut_vector)
+star0(
+  ...,
+  model = NULL,
+  odds.ratio = FALSE,
+  type = NULL,
+  digits = 3,
+  star.cutoffs = star_cut_vector
+)
 }
 \arguments{
 \item{...}{Arguments passed to stargazer}
+
+\item{model}{A model or list of models. Use this named argument (instead of
+passing models via \code{...}) when you need \code{odds.ratio = TRUE}.}
+
+\item{odds.ratio}{Logical; if TRUE and \code{model} is provided, exponentiate
+coefficients to display odds ratios with delta-method standard errors.}
 
 \item{type}{Output format. If NULL (default), auto-detected.}
 
@@ -17,11 +30,17 @@ star0(..., type = NULL, digits = 3, star.cutoffs = star_cut_vector)
 }
 \description{
 Stargazer with sensible defaults: auto-detected format, no header,
-scriptsize font, single significance star at p < 0.05.
+scriptsize font, single significance star at p < 0.05. Supports odds
+ratios for GLM models when \code{model} is provided as a named argument.
 }
 \examples{
 \dontrun{
+# Basic usage
 model <- lm(mpg ~ wt + hp, data = mtcars)
 star0(model)
+
+# With odds ratios for logistic regression
+m <- glm(am ~ wt + hp, data = mtcars, family = binomial)
+star0(model = m, odds.ratio = TRUE)
 }
 }

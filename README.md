@@ -154,29 +154,57 @@ get_xtable_format() # Returns "latex" or "html"
 
 ## Inline Reporting Helpers
 
-Functions to streamline inline R code when reporting regression results in R Markdown:
+Functions to streamline inline R code when reporting regression results. Two sets of functions cover both output formats:
+
+| Plain text (Rmd) | LaTeX (Rnw) | Output |
+|-------------------|-------------|--------|
+| `p(model, "var")` | `pv(model, "var")` or `pv(0.03)` | p-value |
+| `bp(model, "var")` | `bpv(model, "var")` | coefficient + p-value |
+
+### Plain text helpers (for R Markdown)
 
 ```r
 m <- glm(am ~ wt + hp, data = mtcars, family = binomial)
 
 b(m, "wt")           # Coefficient: -8.08
 se(m, "wt")          # Standard error: 3.07
-p(m, "wt")           # P-value: "= 0.014" or "< .001"
+p(m, "wt")           # P-value: "= .014" or "< .001"
 or(m, "wt")          # Odds ratio: 0
 z(m, "wt")           # Z-statistic: -2.63
 ci95(m, "wt")        # 95% CI: "[-16.42, -3.03]"
 ci95(m, "wt", exp = TRUE)  # OR 95% CI: "[0, 0.05]"
 
 # Combined formats
-bp(m, "wt")          # "b = -8.08, p = 0.014"
-orp(m, "wt")         # "OR = 0, p = 0.014"
+bp(m, "wt")          # "b = -8.08, p = .014"
+orp(m, "wt")         # "OR = 0, p = .014"
 ```
 
 Use in R Markdown prose:
 ```
 Weight significantly predicted transmission (`r bp(m, 'wt')`).
 ```
-Renders as: "Weight significantly predicted transmission (b = -8.08, p = 0.014)."
+Renders as: "Weight significantly predicted transmission (b = -8.08, p = .014)."
+
+### LaTeX helpers (for Rnw/Sweave)
+
+```r
+m <- lm(mpg ~ wt, data = mtcars)
+
+# From a model object
+pv(m, "wt")          # "$p$ < 0.001"
+bpv(m, "wt")         # "$b$ = -5.34, $p$ < 0.001"
+
+# From a raw numeric p-value
+pv(0.03)             # "$p$ < 0.05"
+pv(0.002)            # "$p$ < 0.01"
+pv(0.072)            # "$p$ = 0.072"
+```
+
+Use in .Rnw files:
+```
+The effect was significant (\Sexpr{bpv(m, "wt")}).
+```
+Renders as: "The effect was significant ($b$ = -5.34, $p$ < 0.001)."
 
 ## Utility Functions
 
@@ -193,7 +221,7 @@ c(1, 2, 3) %nin% c(2, 4)   # TRUE FALSE TRUE ("not in" operator)
 ## P-value and Effect Size Formatting
 
 ```r
-# Categorical p-value for LaTeX
+# Categorical p-value for LaTeX (accepts numeric, tibble, or matrix input)
 pval(0.001)                # "$p < 0.001$"
 pval(0.03)                 # "$p < 0.05$"
 
